@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>函数图像绘制</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    /* ==================== 全局重置 ==================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ==================== 日间主题 CSS 变量 ==================== */
+    :root {
+      --bg-body: #f5f7fb;
+      --bg-app: #ffffff;
+      --bg-section: #f9fcff;
+      --bg-input: #ffffff;
+      --bg-canvas: #ffffff;
+      --bg-canvas-wrapper: #fbfdff;
+      --text-primary: #0b2b4a;
+      --text-secondary: #5a6f84;
+      --text-muted: #8da1b5;
+      --text-hint: #6a7f94;
+      --border-light: #e1eaf2;
+      --border-medium: #d9e2ec;
+      --border-input: #cbd9e8;
+      --accent: #1e5e9e;
+      --accent-hover: #164a7a;
+      --accent-light: #3a8fd9;
+      --grid-line: #eef3f9;
+      --axis-color: #8aa4be;
+      --axis-label: #4c6f8c;
+      --shadow-color: rgba(0, 10, 30, 0.1);
+      --shadow-soft: rgba(0, 20, 40, 0.06);
+      --btn-bg: #ffffff;
+      --btn-text: #1e5e9e;
+      --btn-border: #cbd9e8;
+      --btn-hover-bg: #eef5fd;
+      --btn-hover-border: #9bbde0;
+      --tooltip-bg: #0b2b4a;
+      --tooltip-text: #ffffff;
+      --toggle-off: #cbd9e8;
+      --toggle-on: #1e5e9e;
+      --toggle-knob: #ffffff;
+      --error-text: #c44536;
+      --empty-text: #8da1b5;
+      --hint-bg: #edf3fa;
+      --color-dot-border: #ffffff;
+      --divider-color: #edf3fa;
+    }
+
+    /* ==================== 夜间主题 CSS 变量 ==================== */
+    body.theme-dark {
+      --bg-body: #0f172a;
+      --bg-app: #1e293b;
+      --bg-section: #1a2538;
+      --bg-input: #0f172a;
+      --bg-canvas: #0f172a;
+      --bg-canvas-wrapper: #0f172a;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --text-hint: #94a3b8;
+      --border-light: #334155;
+      --border-medium: #334155;
+      --border-input: #475569;
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-light: #93c5fd;
+      --grid-line: #1e293b;
+      --axis-color: #475569;
+      --axis-label: #94a3b8;
+      --shadow-color: rgba(0, 0, 0, 0.5);
+      --shadow-soft: rgba(0, 0, 0, 0.3);
+      --btn-bg: #334155;
+      --btn-text: #93c5fd;
+      --btn-border: #475569;
+      --btn-hover-bg: #475569;
+      --btn-hover-border: #64748b;
+      --tooltip-bg: #e2e8f0;
+      --tooltip-text: #0f172a;
+      --toggle-off: #475569;
+      --toggle-on: #60a5fa;
+      --toggle-knob: #e2e8f0;
+      --error-text: #f87171;
+      --empty-text: #64748b;
+      --hint-bg: #1e293b;
+      --color-dot-border: #1e293b;
+      --divider-color: #1e293b;
+    }
+
+    /* ==================== 页面基础布局 ==================== */
+    body {
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: var(--bg-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      transition: background 0.3s;
+      overflow-x: hidden;
+    }
+
+    .bg-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-particles span {
+      position: absolute;
+      display: block;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.08;
+      animation: floatParticle 20s infinite ease-in-out;
+    }
+
+    @keyframes floatParticle {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.08; }
+      50% { transform: translate(40px, -60px) scale(1.5); opacity: 0.15; }
+      100% { transform: translate(0, 0) scale(1); opacity: 0.08; }
+    }
+
+    .app-container {
+      width: 1300px;
+      max-width: 100%;
+      background: var(--bg-app);
+      border-radius: 32px;
+      box-shadow: 0 20px 40px var(--shadow-color), 0 8px 20px var(--shadow-soft);
+      padding: 28px 28px 32px;
+      transition: background 0.3s;
+      position: relative;
+      z-index: 1;
+      animation: containerFadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @keyframes containerFadeIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ==================== 顶部栏 ==================== */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.5px;
+      transition: color 0.3s;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradientShift 4s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .theme-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      border: 1px solid var(--btn-border);
+      border-radius: 30px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.3), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .theme-btn:hover::after {
+      opacity: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--btn-hover-bg);
+      border-color: var(--btn-hover-border);
+      transform: translateY(-1px);
+    }
+
+    .theme-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .theme-btn.active:hover {
+      background: var(--accent-hover);
+    }
+
+    /* ==================== 自定义主题面板 ==================== */
+    .custom-panel {
+      display: none;
+      background: var(--bg-section);
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--border-light);
+      margin-bottom: 18px;
+      transition: background 0.3s;
+      animation: panelSlide 0.3s ease;
+    }
+
+    @keyframes panelSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .custom-panel.show {
+      display: block;
+    }
+
+    .custom-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .custom-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .custom-item label {
+      white-space: nowrap;
+    }
+
+    .custom-item input[type="color"] {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 2px solid var(--border-medium);
+      border-radius: 8px;
+      cursor: pointer;
+      background: none;
+      overflow: hidden;
+    }
+
+    .custom-item input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .custom-item input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 4px;
+    }
+
+    /* ==================== 主面板布局 ==================== */
+    .main-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .canvas-area {
+      flex: 1 1 600px;
+      background: var(--bg-section);
+      border-radius: 20px;
+      box-shadow: inset 0 2px 8px var(--shadow-soft), 0 4px 12px var(--shadow-soft);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 600px;
+      border-radius: 16px;
+      background: var(--bg-canvas-wrapper);
+      border: 1px solid var(--border-medium);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      background: var(--bg-canvas);
+      transition: background 0.3s;
+    }
+
+    .controls {
+      flex: 1 1 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: 700px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .controls > .collapsible-section {
+      flex-shrink: 0;
+    }
+
+    /* ==================== 可收起面板通用样式 ==================== */
+    .collapsible-section {
+      background: var(--bg-section);
+      border-radius: 20px;
+      border: 1px solid var(--border-light);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+
+    .collapsible-section:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .collapsible-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+      gap: 8px;
+    }
+
+    .collapsible-header:hover {
+      background: var(--btn-hover-bg);
+    }
+
+    .collapsible-header .header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .collapsible-header .header-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      transition: color 0.3s;
+    }
+
+    .collapse-arrow {
+      font-size: 0.75rem;
+      color: var(--text-hint);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .collapsible-section.collapsed .collapse-arrow {
+      transform: rotate(-90deg);
+    }
+
+    .collapsible-body {
+      padding: 0 16px 16px;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.3s ease,
+                  padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 5000px;
+      opacity: 1;
+      overflow: visible;
+    }
+
+    .collapsible-section.collapsed .collapsible-body {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      overflow: hidden;
+    }
+
+    /* ==================== 函数列表区域 ==================== */
+    .function-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+      min-height: 60px;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: var(--empty-text);
+      font-size: 0.85rem;
+      padding: 20px 0;
+      transition: color 0.3s;
+    }
+
+    .function-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-medium);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s, background 0.3s, border-color 0.3s;
+      position: relative;
+      animation: itemFadeIn 0.3s ease;
+    }
+
+    @keyframes itemFadeIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .function-item:hover {
+      border-color: var(--accent-light);
+      box-shadow: 0 4px 12px rgba(58, 143, 217, 0.12);
+    }
+
+    .function-item.disabled {
+      opacity: 0.5;
+    }
+
+    .function-main-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .color-picker {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 2px solid var(--color-dot-border);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+      background: none;
+      overflow: hidden;
+    }
+
+    .color-picker::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .color-picker::-webkit-color-swatch {
+      border: none;
+      border-radius: 50%;
+    }
+
+    .func-input-small {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 12px;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--border-input);
+      border-radius: 12px;
+      outline: none;
+      background: var(--bg-input);
+      color: var(--text-primary);
+      transition: border-color 0.15s, background 0.3s, color 0.3s;
+    }
+
+    .func-input-small:focus {
+      border-color: var(--accent-light);
+      box-shadow: 0 0 0 3px rgba(58, 143, 217, 0.1);
+    }
+
+    .func-label-input {
+      flex: 1;
+      min-width: 80px;
+      padding: 6px 10px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-input);
+      border-radius: 10px;
+      outline: none;
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      transition: border-color 0.15s, background 0.3s, color 0.3s;
+    }
+
+    .func-label-input:focus {
+      border-color: var(--accent-light);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-hint);
+      padding: 4px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      transition: all 0.1s, color 0.3s;
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      background: var(--btn-hover-bg);
+      color: var(--error-text);
+    }
+
+    .btn-icon.add {
+      color: var(--accent);
+    }
+    .btn-icon.add:hover {
+      background: var(--btn-hover-bg);
+      color: var(--accent-hover);
+    }
+
+    /* ==================== 通用按钮 ==================== */
+    .btn {
+      border: none;
+      border-radius: 40px;
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: 1px solid var(--btn-border);
+      flex: 1 0 auto;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      background: var(--btn-hover-bg);
+      border-color: var(--btn-hover-border);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: white;
+      border: 1px solid var(--accent);
+      box-shadow: 0 6px 14px rgba(30, 94, 158, 0.25);
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      box-shadow: 0 8px 18px rgba(30, 94, 158, 0.35);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+      align-items: center;
+    }
+
+    .btn-row .btn {
+      flex: 1;
+    }
+
+    /* ==================== 自动绘制开关 ==================== */
+    .auto-draw-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 40px;
+      padding: 8px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      white-space: nowrap;
+    }
+
+    .auto-draw-wrapper:hover {
+      background: var(--btn-hover-bg);
+      border-color: var(--btn-hover-border);
+    }
+
+    .auto-draw-wrapper.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .auto-draw-wrapper.active .auto-label {
+      color: white;
+    }
+
+    .auto-draw-wrapper.active .toggle-switch {
+      background: var(--accent-light);
+    }
+
+    .auto-draw-wrapper.active .toggle-knob {
+      transform: translateX(18px);
+      background: white;
+    }
+
+    .auto-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--btn-text);
+      transition: color 0.15s;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--toggle-off);
+      border-radius: 30px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: var(--toggle-knob);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ==================== 参数管理区域 ==================== */
+    .param-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+      min-height: 40px;
+    }
+
+    .param-empty-message {
+      text-align: center;
+      color: var(--empty-text);
+      font-size: 0.85rem;
+      padding: 14px 0;
+    }
+
+    .param-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-medium);
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .param-name {
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.9rem;
+      min-width: 30px;
+      font-family: 'Fira Code', monospace;
+      transition: color 0.3s;
+    }
+
+    .param-slider {
+      flex: 1;
+      accent-color: var(--accent);
+      height: 6px;
+      border-radius: 3px;
+    }
+
+    /* 参数值输入框：支持分数（type=text） */
+    .param-value-input {
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+      color: var(--text-primary);
+      min-width: 80px;
+      text-align: right;
+      font-size: 0.9rem;
+      background: var(--bg-input);
+      padding: 4px 8px;
+      border-radius: 30px;
+      border: 1px solid var(--border-medium);
+      width: 90px;
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    .param-value-input:focus {
+      outline: 2px solid var(--accent-light);
+      border-color: transparent;
+    }
+
+    /* ==================== 分析面板 ==================== */
+    .analysis-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .analysis-table th {
+      text-align: left;
+      padding: 6px 8px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-medium);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: color 0.3s, border-color 0.3s;
+    }
+
+    .analysis-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--divider-color);
+      vertical-align: middle;
+      color: var(--text-primary);
+      transition: color 0.3s, border-color 0.3s;
+    }
+
+    .analysis-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .color-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      border: 1px solid var(--color-dot-border);
+    }
+
+    .interval-input {
+      width: 60px;
+      padding: 4px 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-input);
+      border-radius: 8px;
+      outline: none;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    .interval-input:focus {
+      border-color: var(--accent-light);
+    }
+
+    .status {
+      font-size: 0.8rem;
+      color: var(--error-text);
+      min-height: 20px;
+      margin-top: 6px;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border-light);
+      padding-top: 16px;
+      transition: color 0.3s, border-color 0.3s;
+    }
+
+    /* ==================== 提示框 ==================== */
+    .hint-tooltip {
+      font-size: 0.7rem;
+      color: var(--text-hint);
+      background: var(--hint-bg);
+      padding: 2px 8px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
+      position: relative;
+      width: 18px;
+      height: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .hint-tooltip-global {
+      position: fixed;
+      pointer-events: none;
+      background: var(--tooltip-bg);
+      color: var(--tooltip-text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      line-height: 1.5;
+      max-width: 280px;
+      white-space: normal;
+      word-break: break-word;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.15s;
+      text-align: left;
+      transform: translate(-50%, -100%);
+    }
+
+    .hint-tooltip-global.visible {
+      opacity: 1;
+    }
+
+    .hint-tooltip-global::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--tooltip-bg);
+    }
+
+    /* ==================== 参数添加行 ==================== */
+    .param-add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .param-add-input {
+      flex: 1;
+      padding: 8px 12px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      border: 1.5px solid var(--border-input);
+      border-radius: 12px;
+      outline: none;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      min-width: 60px;
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    .param-add-input:focus {
+      border-color: var(--accent-light);
+    }
+
+    .small-btn {
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      border-radius: 30px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.1s;
+      white-space: nowrap;
+    }
+
+    .small-btn:hover {
+      background: var(--btn-hover-bg);
+      border-color: var(--btn-hover-border);
+    }
+
+    .small-btn.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .small-btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .warning-text {
+      font-size: 0.75rem;
+      color: var(--error-text);
+      margin-top: 6px;
+      min-height: 16px;
+      transition: color 0.3s;
+    }
+
+    /* ==================== 画布悬停提示 ==================== */
+    .canvas-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: var(--tooltip-bg);
+      color: var(--tooltip-text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      white-space: nowrap;
+      z-index: 200;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transition: opacity 0.15s;
+      transform: translate(-50%, -100%);
+      margin-top: -8px;
+      max-width: 280px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .canvas-tooltip.visible {
+      opacity: 1;
+    }
+
+    .canvas-tooltip .tooltip-label {
+      font-weight: 700;
+      margin-bottom: 3px;
+      font-size: 0.82rem;
+    }
+
+    .canvas-tooltip .tooltip-expr {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .canvas-tooltip .tooltip-color-bar {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    /* ==================== 响应式 ==================== */
+    @media (max-width: 750px) {
+      .app-container {
+        padding: 18px;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      .btn-row {
+        flex-wrap: wrap;
+      }
+      .auto-draw-wrapper {
+        flex: 1;
+        justify-content: center;
+      }
+      .hint-tooltip-global {
+        max-width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- 背景粒子动画 -->
+<div class="bg-particles" id="bgParticles"></div>
+
+<!-- 全局单例提示框 -->
+<div class="hint-tooltip-global" id="hintTooltipGlobal"></div>
+
+<div class="app-container">
+  <!-- 顶部栏 -->
+  <div class="top-bar">
+    <h1>
+      <span>函数图像绘制</span>
+    </h1>
+    <div class="theme-controls">
+      <button class="theme-btn active" id="themeLightBtn">☀️ 日间</button>
+      <button class="theme-btn" id="themeDarkBtn">🌙 夜间</button>
+      <button class="theme-btn" id="themeCustomBtn">🎨 自定义</button>
+    </div>
+  </div>
+
+  <!-- 自定义主题面板 -->
+  <div class="custom-panel" id="customPanel">
+    <div class="custom-row">
+      <div class="custom-item">
+        <label>背景色</label>
+        <input type="color" id="customBgColor" value="#f5f7fb">
+      </div>
+      <div class="custom-item">
+        <label>面板色</label>
+        <input type="color" id="customAppColor" value="#ffffff">
+      </div>
+      <div class="custom-item">
+        <label>强调色</label>
+        <input type="color" id="customAccentColor" value="#1e5e9e">
+      </div>
+      <div class="custom-item">
+        <label>文字色</label>
+        <input type="color" id="customTextColor" value="#0b2b4a">
+      </div>
+      <button class="small-btn" id="resetCustomBtn">重置</button>
+    </div>
+  </div>
+
+  <div class="main-panel">
+    <!-- 画布区域 -->
+    <div class="canvas-area">
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="graphCanvas" width="800" height="800"></canvas>
+        <!-- 画布悬停提示 -->
+        <div class="canvas-tooltip" id="canvasTooltip">
+          <div class="tooltip-label" id="tooltipLabel"></div>
+          <div class="tooltip-expr" id="tooltipExpr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 控制区域 -->
+    <div class="controls">
+      <!-- 函数列表（可收起） -->
+      <div class="collapsible-section" id="functionsSection">
+        <div class="collapsible-header" data-target="functionsSection">
+          <div class="header-left">
+            <span class="header-title">函数列表</span>
+            <span class="hint-tooltip" data-hint="支持 sin, cos, tan, exp, log, sqrt, abs, log10, log2, sinh, cosh, tanh；^ 表示幂运算；常量 PI, E；参数需先在参数管理中添加。">❓</span>
+          </div>
+          <span class="collapse-arrow">▼</span>
+        </div>
+        <div class="collapsible-body">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+            <button class="btn-icon add" id="addFunctionBtn" title="添加函数">＋</button>
+          </div>
+          <div class="function-list" id="functionList"></div>
+          <div class="btn-row">
+            <button class="btn primary" id="plotBtn">绘制所有函数</button>
+            <button class="btn" id="resetViewBtn">重置视图</button>
+            <div class="auto-draw-wrapper" id="autoDrawToggle" title="开启后，修改函数或参数将自动重绘">
+              <span class="auto-label">自动绘制</span>
+              <div class="toggle-switch">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+          <div class="warning-text" id="funcWarning"></div>
+        </div>
+      </div>
+
+      <!-- 参数管理（可收起） -->
+      <div class="collapsible-section" id="paramSection">
+        <div class="collapsible-header" data-target="paramSection">
+          <div class="header-left">
+            <span class="header-title">参数管理</span>
+            <span class="hint-tooltip" data-hint="参数名不能包含数字，也不能是 x、sin、cos 等保留字；参数值支持分数（如 1/3），输入后自动转为小数。">❓</span>
+          </div>
+          <span class="collapse-arrow">▼</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="param-list" id="paramList"></div>
+          <div class="param-add-row">
+            <input type="text" class="param-add-input" id="newParamName" placeholder="参数名 (如 t)" maxlength="5">
+            <button class="small-btn primary" id="addParamBtn">添加</button>
+          </div>
+          <div class="warning-text" id="paramWarning"></div>
+        </div>
+      </div>
+
+      <!-- 函数分析（可收起） -->
+      <div class="collapsible-section" id="analysisSection">
+        <div class="collapsible-header" data-target="analysisSection">
+          <div class="header-left">
+            <span class="header-title">📐 函数分析</span>
+            <span class="hint-tooltip" data-hint="奇偶性基于全定义域；单调性基于下方输入区间。若区间跨越无定义点（如 1/x 的 x=0），单调性显示为“不单调”。">❓</span>
+          </div>
+          <span class="collapse-arrow">▼</span>
+        </div>
+        <div class="collapsible-body">
+          <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+            <span style="font-size:0.8rem; color:var(--text-secondary);">单调性分析区间:</span>
+            <input type="number" class="interval-input" id="monoIntervalStart" value="-1" step="0.1">
+            <span style="color:var(--text-secondary);">~</span>
+            <input type="number" class="interval-input" id="monoIntervalEnd" value="1" step="0.1">
+            <button class="small-btn" id="applyIntervalBtn">应用</button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="analysis-table" id="analysisTable">
+              <thead>
+                <tr>
+                  <th>函数</th>
+                  <th>奇偶性</th>
+                  <th>单调性 (区间内)</th>
+                </tr>
+              </thead>
+              <tbody id="analysisBody"></tbody>
+            </table>
+          </div>
+          <div class="status" id="errorMessage"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    ⚡ 鼠标拖拽平移 · 滚轮缩放 · 悬停查看函数标签 · 点击标题可收起面板
+  </div>
+</div>
+
+<script>
+  (function(){
+    'use strict';
+
+    // ==================== 常量与全局状态 ====================
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 800;
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
+    let viewXMin = -8, viewXMax = 8;
+    let viewYMin = -8, viewYMax = 8;
+
+    /** 函数列表：{ id, expr, label, color, enabled, func } */
+    let functions = [];
+
+    /**
+     * 参数存储：Map<参数名, { value, min, max, step }>
+     * value 始终为数值（分数输入会转换为小数）
+     */
+    const paramMap = new Map();
+    let autoDrawEnabled = false;
+    let currentTheme = 'light';
+
+    let customColors = {
+      bgBody: '#f5f7fb',
+      bgApp: '#ffffff',
+      accent: '#1e5e9e',
+      textPrimary: '#0b2b4a'
+    };
+
+    const RESERVED = new Set([
+      'x', 'X', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'exp', 'log', 'ln',
+      'sqrt', 'abs', 'pow', 'round', 'floor', 'ceil', 'sign', 'PI', 'E',
+      'Math', 'function', 'return', 'var', 'let', 'const', 'if', 'else', 'true', 'false',
+      'log10', 'log2', 'cbrt', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
+      'trunc', 'fround', 'hypot', 'max', 'min', 'random', 'imul', 'clz32'
+    ]);
+
+    const MATH_FUNCS = [
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'exp', 'log', 'sqrt', 'abs',
+      'pow', 'round', 'floor', 'ceil', 'sign', 'log10', 'log2', 'cbrt',
+      'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh', 'trunc'
+    ];
+
+    // DOM
+    const functionListDiv = document.getElementById('functionList');
+    const addFunctionBtn = document.getElementById('addFunctionBtn');
+    const plotBtn = document.getElementById('plotBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
+    const paramListDiv = document.getElementById('paramList');
+    const newParamNameInput = document.getElementById('newParamName');
+    const addParamBtn = document.getElementById('addParamBtn');
+    const paramWarning = document.getElementById('paramWarning');
+    const funcWarning = document.getElementById('funcWarning');
+    const analysisBody = document.getElementById('analysisBody');
+    const errorMessage = document.getElementById('errorMessage');
+    const monoIntervalStart = document.getElementById('monoIntervalStart');
+    const monoIntervalEnd = document.getElementById('monoIntervalEnd');
+    const applyIntervalBtn = document.getElementById('applyIntervalBtn');
+    const autoDrawToggle = document.getElementById('autoDrawToggle');
+    const canvasTooltip = document.getElementById('canvasTooltip');
+    const tooltipLabel = document.getElementById('tooltipLabel');
+    const tooltipExpr = document.getElementById('tooltipExpr');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const hintTooltipGlobal = document.getElementById('hintTooltipGlobal');
+
+    // 主题 DOM
+    const themeLightBtn = document.getElementById('themeLightBtn');
+    const themeDarkBtn = document.getElementById('themeDarkBtn');
+    const themeCustomBtn = document.getElementById('themeCustomBtn');
+    const customPanel = document.getElementById('customPanel');
+    const customBgColor = document.getElementById('customBgColor');
+    const customAppColor = document.getElementById('customAppColor');
+    const customAccentColor = document.getElementById('customAccentColor');
+    const customTextColor = document.getElementById('customTextColor');
+    const resetCustomBtn = document.getElementById('resetCustomBtn');
+
+    let monoInterval = { start: -1, end: 1 };
+
+    /** 当前悬停的函数（用于高亮） */
+    let hoveredFunction = null;
+
+    // ==================== 分数解析工具 ====================
+    /**
+     * 解析参数值字符串，支持整数、小数、分数（如 1/3、-2/5、0.5）
+     * @param {string} str
+     * @returns {number|null} 解析成功返回数值，失败返回 null
+     */
+    function parseParamValue(str) {
+      if (typeof str !== 'string') return null;
+      str = str.trim();
+      if (!str) return null;
+
+      // 分数格式：允许前置负号，分子分母为整数
+      const fracMatch = str.match(/^(-?\d+)\s*\/\s*(-?\d+)$/);
+      if (fracMatch) {
+        const num = parseInt(fracMatch[1], 10);
+        const den = parseInt(fracMatch[2], 10);
+        if (den === 0) return null; // 分母不能为 0
+        return num / den;
+      }
+
+      // 普通数字（整数或小数，允许科学计数法）
+      const num = parseFloat(str);
+      if (isNaN(num)) return null;
+      return num;
+    }
+
+    // ==================== 全局提示框逻辑 ====================
+    function initHintTooltips() {
+      const tooltips = document.querySelectorAll('.hint-tooltip');
+      tooltips.forEach(tip => {
+        tip.addEventListener('mouseenter', () => {
+          const hint = tip.getAttribute('data-hint');
+          if (!hint) return;
+          hintTooltipGlobal.textContent = hint;
+          hintTooltipGlobal.classList.add('visible');
+
+          const rect = tip.getBoundingClientRect();
+          const tooltipRect = hintTooltipGlobal.getBoundingClientRect();
+          const tooltipHeight = tooltipRect.height;
+          const tooltipWidth = tooltipRect.width;
+
+          let left = rect.left + rect.width / 2;
+          let top = rect.top - 8;
+
+          const halfWidth = tooltipWidth / 2;
+          if (left - halfWidth < 8) left = halfWidth + 8;
+          if (left + halfWidth > window.innerWidth - 8) left = window.innerWidth - halfWidth - 8;
+
+          if (top - tooltipHeight < 8) {
+            top = rect.bottom + 8 + tooltipHeight;
+            hintTooltipGlobal.style.transform = 'translate(-50%, 0)';
+            hintTooltipGlobal.classList.add('arrow-top');
+          } else {
+            hintTooltipGlobal.style.transform = 'translate(-50%, -100%)';
+            hintTooltipGlobal.classList.remove('arrow-top');
+          }
+
+          hintTooltipGlobal.style.left = left + 'px';
+          hintTooltipGlobal.style.top = top + 'px';
+        });
+
+        tip.addEventListener('mouseleave', () => {
+          hintTooltipGlobal.classList.remove('visible');
+        });
+      });
+    }
+
+    window.addEventListener('scroll', () => {
+      hintTooltipGlobal.classList.remove('visible');
+    }, true);
+
+    // ==================== 面板收起/展开 ====================
+    function initCollapsiblePanels() {
+      const headers = document.querySelectorAll('.collapsible-header');
+      headers.forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('.hint-tooltip')) return;
+          if (e.target.closest('.btn-icon')) return;
+          const targetId = header.dataset.target;
+          const section = document.getElementById(targetId);
+          if (section) section.classList.toggle('collapsed');
+        });
+      });
+    }
+
+    // ==================== 背景粒子 ====================
+    (function createParticles() {
+      const container = document.getElementById('bgParticles');
+      const count = 18;
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        const size = 8 + Math.random() * 40;
+        span.style.width = size + 'px';
+        span.style.height = size + 'px';
+        span.style.left = Math.random() * 100 + '%';
+        span.style.top = Math.random() * 100 + '%';
+        span.style.animationDelay = (Math.random() * 20) + 's';
+        span.style.animationDuration = (15 + Math.random() * 20) + 's';
+        container.appendChild(span);
+      }
+    })();
+
+    // ==================== 主题管理 ====================
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.body.classList.remove('theme-dark');
+      themeLightBtn.classList.remove('active');
+      themeDarkBtn.classList.remove('active');
+      themeCustomBtn.classList.remove('active');
+
+      if (theme === 'light') {
+        themeLightBtn.classList.add('active');
+        customPanel.classList.remove('show');
+        document.documentElement.style.cssText = '';
+      } else if (theme === 'dark') {
+        themeDarkBtn.classList.add('active');
+        customPanel.classList.remove('show');
+        document.body.classList.add('theme-dark');
+        document.documentElement.style.cssText = '';
+      } else if (theme === 'custom') {
+        themeCustomBtn.classList.add('active');
+        customPanel.classList.add('show');
+        document.body.classList.remove('theme-dark');
+        applyCustomTheme();
+      }
+      renderAll();
+    }
+
+    function applyCustomTheme() {
+      const root = document.documentElement;
+      root.style.setProperty('--bg-body', customColors.bgBody);
+      root.style.setProperty('--bg-app', customColors.bgApp);
+      root.style.setProperty('--bg-section', lighten(customColors.bgApp, 5));
+      root.style.setProperty('--bg-input', customColors.bgApp);
+      root.style.setProperty('--bg-canvas', customColors.bgApp);
+      root.style.setProperty('--bg-canvas-wrapper', lighten(customColors.bgApp, 3));
+      root.style.setProperty('--accent', customColors.accent);
+      root.style.setProperty('--accent-light', lighten(customColors.accent, 20));
+      root.style.setProperty('--accent-hover', darken(customColors.accent, 15));
+      root.style.setProperty('--text-primary', customColors.textPrimary);
+      root.style.setProperty('--text-secondary', adjustAlpha(customColors.textPrimary, 0.7));
+      root.style.setProperty('--text-muted', adjustAlpha(customColors.textPrimary, 0.5));
+      root.style.setProperty('--text-hint', adjustAlpha(customColors.textPrimary, 0.6));
+      root.style.setProperty('--btn-bg', customColors.bgApp);
+      root.style.setProperty('--btn-text', customColors.accent);
+      root.style.setProperty('--btn-border', adjustAlpha(customColors.textPrimary, 0.2));
+      root.style.setProperty('--btn-hover-bg', lighten(customColors.accent, 90));
+      root.style.setProperty('--border-light', adjustAlpha(customColors.textPrimary, 0.1));
+      root.style.setProperty('--border-medium', adjustAlpha(customColors.textPrimary, 0.15));
+      root.style.setProperty('--border-input', adjustAlpha(customColors.textPrimary, 0.2));
+      root.style.setProperty('--grid-line', lighten(customColors.accent, 92));
+      root.style.setProperty('--axis-color', adjustAlpha(customColors.textPrimary, 0.5));
+      root.style.setProperty('--axis-label', adjustAlpha(customColors.textPrimary, 0.6));
+      root.style.setProperty('--tooltip-bg', customColors.textPrimary);
+      root.style.setProperty('--tooltip-text', customColors.bgApp);
+      root.style.setProperty('--hint-bg', lighten(customColors.accent, 90));
+      root.style.setProperty('--toggle-on', customColors.accent);
+      root.style.setProperty('--toggle-off', adjustAlpha(customColors.textPrimary, 0.2));
+      root.style.setProperty('--toggle-knob', customColors.bgApp);
+      root.style.setProperty('--empty-text', adjustAlpha(customColors.textPrimary, 0.5));
+      root.style.setProperty('--divider-color', adjustAlpha(customColors.textPrimary, 0.08));
+      root.style.setProperty('--color-dot-border', customColors.bgApp);
+      root.style.setProperty('--error-text', '#c44536');
+      root.style.setProperty('--shadow-color', 'rgba(0,0,0,0.1)');
+      root.style.setProperty('--shadow-soft', 'rgba(0,0,0,0.05)');
+    }
+
+    function lighten(hex, percent) {
+      const num = parseInt(hex.replace('#', ''), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.min(255, (num >> 16) + amt);
+      const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+      const B = Math.min(255, (num & 0x0000FF) + amt);
+      return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`;
+    }
+
+    function darken(hex, percent) {
+      const num = parseInt(hex.replace('#', ''), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.max(0, (num >> 16) - amt);
+      const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+      const B = Math.max(0, (num & 0x0000FF) - amt);
+      return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`;
+    }
+
+    function adjustAlpha(hex, alpha) {
+      const num = parseInt(hex.replace('#', ''), 16);
+      const R = (num >> 16) & 0xFF;
+      const G = (num >> 8) & 0xFF;
+      const B = num & 0xFF;
+      return `rgba(${R},${G},${B},${alpha})`;
+    }
+
+    themeLightBtn.addEventListener('click', () => applyTheme('light'));
+    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
+    themeCustomBtn.addEventListener('click', () => applyTheme('custom'));
+
+    customBgColor.addEventListener('input', (e) => {
+      customColors.bgBody = e.target.value;
+      if (currentTheme === 'custom') { applyCustomTheme(); renderAll(); }
+    });
+    customAppColor.addEventListener('input', (e) => {
+      customColors.bgApp = e.target.value;
+      if (currentTheme === 'custom') { applyCustomTheme(); renderAll(); }
+    });
+    customAccentColor.addEventListener('input', (e) => {
+      customColors.accent = e.target.value;
+      if (currentTheme === 'custom') { applyCustomTheme(); renderAll(); }
+    });
+    customTextColor.addEventListener('input', (e) => {
+      customColors.textPrimary = e.target.value;
+      if (currentTheme === 'custom') { applyCustomTheme(); renderAll(); }
+    });
+    resetCustomBtn.addEventListener('click', () => {
+      customColors = { bgBody: '#f5f7fb', bgApp: '#ffffff', accent: '#1e5e9e', textPrimary: '#0b2b4a' };
+      customBgColor.value = customColors.bgBody;
+      customAppColor.value = customColors.bgApp;
+      customAccentColor.value = customColors.accent;
+      customTextColor.value = customColors.textPrimary;
+      if (currentTheme === 'custom') { applyCustomTheme(); renderAll(); }
+    });
+
+    // ==================== 自动绘制 ====================
+    function autoRedraw() {
+      if (!autoDrawEnabled) return;
+      recompileAllFunctions();
+      renderAll();
+    }
+
+    // ==================== 参数管理 ====================
+    function initDefaultParams() {
+      paramMap.clear();
+      renderParamList();
+    }
+
+    function renderParamList() {
+      paramListDiv.innerHTML = '';
+      if (paramMap.size === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'param-empty-message';
+        emptyMsg.textContent = '暂无参数，请在下方添加';
+        paramListDiv.appendChild(emptyMsg);
+        return;
+      }
+      paramMap.forEach((data, name) => {
+        const item = document.createElement('div');
+        item.className = 'param-item';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'param-name';
+        nameSpan.textContent = name;
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'param-slider';
+        slider.min = data.min;
+        slider.max = data.max;
+        slider.step = data.step;
+        // 滑块显示实际数值（可能为小数）
+        slider.value = data.value;
+
+        // 参数值输入框：type=text，支持分数输入
+        const valueInput = document.createElement('input');
+        valueInput.type = 'text';
+        valueInput.className = 'param-value-input';
+        // 若值是整数则显示整数，否则显示保留 4 位的小数
+        valueInput.value = formatParamDisplay(data.value);
+        valueInput.title = '支持分数，如 1/3';
+        valueInput.spellcheck = false;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-icon';
+        delBtn.innerHTML = '🗑️';
+        delBtn.title = '删除参数';
+        delBtn.style.fontSize = '0.9rem';
+        delBtn.style.width = '28px';
+        delBtn.style.height = '28px';
+        delBtn.addEventListener('click', () => {
+          paramMap.delete(name);
+          renderParamList();
+          autoRedraw();
+          renderAll();
+        });
+
+        // 滑块 → 输入框同步 + 自动重绘
+        slider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          data.value = val;
+          valueInput.value = formatParamDisplay(val);
+          autoRedraw();
+        });
+
+        // 输入框 → 滑块同步 + 自动重绘（支持分数）
+        valueInput.addEventListener('input', (e) => {
+          const parsed = parseParamValue(e.target.value);
+          if (parsed === null) return; // 输入不合法时暂不处理，等待 blur 或继续输入
+          // 限制在 [min, max] 范围内
+          let val = parsed;
+          if (val < data.min) val = data.min;
+          if (val > data.max) val = data.max;
+          data.value = val;
+          slider.value = val;
+          autoRedraw();
+        });
+
+        // 失焦时：解析并格式化
+        valueInput.addEventListener('blur', (e) => {
+          const parsed = parseParamValue(e.target.value);
+          if (parsed === null) {
+            // 无法解析，恢复为当前合法值
+            valueInput.value = formatParamDisplay(data.value);
+            return;
+          }
+          let val = parsed;
+          if (val < data.min) val = data.min;
+          if (val > data.max) val = data.max;
+          data.value = val;
+          slider.value = val;
+          valueInput.value = formatParamDisplay(val);
+        });
+
+        // 回车确认
+        valueInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.target.blur();
+          }
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(slider);
+        item.appendChild(valueInput);
+        item.appendChild(delBtn);
+        paramListDiv.appendChild(item);
+      });
+    }
+
+    /**
+     * 将参数值格式化为显示字符串：整数显示整数，小数保留 4 位并去除末尾 0
+     */
+    function formatParamDisplay(val) {
+      if (Number.isInteger(val)) return val.toString();
+      // 保留 4 位小数，去除末尾多余的 0
+      let s = val.toFixed(4);
+      s = s.replace(/0+$/, '').replace(/\.$/, '');
+      return s;
+    }
+
+    function addParameter(name) {
+      name = name.trim();
+      if (!name) {
+        paramWarning.textContent = '参数名不能为空';
+        return false;
+      }
+      if (name.length > 5) {
+        paramWarning.textContent = '参数名过长 (最多5字符)';
+        return false;
+      }
+      if (/\d/.test(name)) {
+        paramWarning.textContent = '参数名不能包含数字';
+        return false;
+      }
+      if (RESERVED.has(name) || name.toLowerCase() === 'x') {
+        paramWarning.textContent = `"${name}" 是保留字，不能作为参数名`;
+        return false;
+      }
+      if (paramMap.has(name)) {
+        paramWarning.textContent = `参数 "${name}" 已存在`;
+        return false;
+      }
+      paramMap.set(name, { value: 1, min: -10, max: 10, step: 0.01 });
+      renderParamList();
+      paramWarning.textContent = '';
+      autoRedraw();
+      return true;
+    }
+
+    // ==================== 表达式编译 ====================
+    function compileExpression(expr) {
+      let sanitized = expr.trim();
+      if (!sanitized) throw new Error('表达式为空');
+      sanitized = sanitized.replace(/\^/g, '**');
+      sanitized = sanitized.replace(/\bPI\b/g, 'Math.PI');
+      sanitized = sanitized.replace(/\bE\b/g, 'Math.E');
+      MATH_FUNCS.forEach(f => {
+        sanitized = sanitized.replace(new RegExp(`\\b${f}\\b`, 'g'), (match, offset, str) => {
+          if (offset > 0 && str[offset - 1] === '.') return match;
+          return `Math.${f}`;
+        });
+      });
+      sanitized = sanitized.replace(/\bln\b/g, 'Math.log');
+      sanitized = sanitized.replace(/\bX\b/g, 'x');
+      paramMap.forEach((data, name) => {
+        if (!name) return;
+        const val = data.value;
+        const regex = new RegExp(`\\b${name}\\b`, 'g');
+        sanitized = sanitized.replace(regex, val.toString());
+      });
+      try {
+        const fn = new Function('x', `"use strict"; return (${sanitized});`);
+        const testVal = fn(0.5);
+        if (typeof testVal !== 'number') throw new Error('表达式在测试点无有效数值');
+        return fn;
+      } catch (e) {
+        throw new Error('表达式无效: ' + e.message);
+      }
+    }
+
+    function safeEval(fn, x) {
+      try {
+        const y = fn(x);
+        return (typeof y === 'number' && isFinite(y)) ? y : NaN;
+      } catch { return NaN; }
+    }
+
+    // ==================== 坐标转换 ====================
+    function toCanvasCoords(x, y) {
+      const px = ((x - viewXMin) / (viewXMax - viewXMin)) * CANVAS_WIDTH;
+      const py = CANVAS_HEIGHT - ((y - viewYMin) / (viewYMax - viewYMin)) * CANVAS_HEIGHT;
+      return { px, py };
+    }
+
+    function toLogicCoords(px, py) {
+      const x = viewXMin + (px / CANVAS_WIDTH) * (viewXMax - viewXMin);
+      const y = viewYMin + ((CANVAS_HEIGHT - py) / CANVAS_HEIGHT) * (viewYMax - viewYMin);
+      return { x, y };
+    }
+
+    function getCSSVar(name, fallback) {
+      const bodyStyle = getComputedStyle(document.body);
+      const val = bodyStyle.getPropertyValue(name).trim();
+      if (val) return val;
+      const rootStyle = getComputedStyle(document.documentElement);
+      return rootStyle.getPropertyValue(name).trim() || fallback;
+    }
+
+    // ==================== 绘制网格与坐标轴 ====================
+    function drawGridAndAxes() {
+      ctx.save();
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      const gridColor = getCSSVar('--grid-line', '#eef3f9');
+      const axisColor = getCSSVar('--axis-color', '#8aa4be');
+      const axisLabel = getCSSVar('--axis-label', '#4c6f8c');
+      const canvasBg = getCSSVar('--bg-canvas', '#ffffff');
+
+      ctx.fillStyle = canvasBg;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      const xRange = viewXMax - viewXMin;
+      const step = niceStep(xRange / 12);
+
+      const startX = Math.ceil(viewXMin / step) * step;
+      for (let x = startX; x <= viewXMax; x += step) {
+        const { px } = toCanvasCoords(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, CANVAS_HEIGHT);
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      const startY = Math.ceil(viewYMin / step) * step;
+      for (let y = startY; y <= viewYMax; y += step) {
+        const { py } = toCanvasCoords(0, y);
+        ctx.beginPath();
+        ctx.moveTo(0, py);
+        ctx.lineTo(CANVAS_WIDTH, py);
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = axisColor;
+      ctx.lineWidth = 2;
+      const { py: y0 } = toCanvasCoords(0, 0);
+      if (y0 >= 0 && y0 <= CANVAS_HEIGHT) {
+        ctx.beginPath();
+        ctx.moveTo(0, y0);
+        ctx.lineTo(CANVAS_WIDTH, y0);
+        ctx.stroke();
+      }
+      const { px: x0 } = toCanvasCoords(0, 0);
+      if (x0 >= 0 && x0 <= CANVAS_WIDTH) {
+        ctx.beginPath();
+        ctx.moveTo(x0, 0);
+        ctx.lineTo(x0, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+
+      ctx.font = '12px "Segoe UI", "Fira Code", monospace';
+      ctx.fillStyle = axisLabel;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let x = startX; x <= viewXMax; x += step) {
+        if (Math.abs(x) < 1e-9) continue;
+        const { px, py } = toCanvasCoords(x, 0);
+        if (py < 0 || py > CANVAS_HEIGHT - 16) continue;
+        ctx.fillText(formatNumber(x), px, py + 6);
+      }
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let y = startY; y <= viewYMax; y += step) {
+        if (Math.abs(y) < 1e-9) continue;
+        const { px, py } = toCanvasCoords(0, y);
+        if (px < 12 || px > CANVAS_WIDTH) continue;
+        ctx.fillText(formatNumber(y), px - 8, py);
+      }
+      if (x0 >= 0 && x0 <= CANVAS_WIDTH && y0 >= 0 && y0 <= CANVAS_HEIGHT) {
+        ctx.beginPath();
+        ctx.arc(x0, y0, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = axisColor;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function formatNumber(val) {
+      if (Math.abs(val) < 1e-9) return '0';
+      if (Math.abs(val) >= 100) return val.toFixed(0);
+      if (Math.abs(val) >= 10) return val.toFixed(1);
+      if (Math.abs(val) >= 1) return val.toFixed(1);
+      return val.toFixed(2);
+    }
+
+    function niceStep(rawStep) {
+      const exponent = Math.floor(Math.log10(rawStep));
+      const fraction = rawStep / Math.pow(10, exponent);
+      let niceFraction;
+      if (fraction < 1.5) niceFraction = 1;
+      else if (fraction < 3) niceFraction = 2;
+      else if (fraction < 7) niceFraction = 5;
+      else niceFraction = 10;
+      return niceFraction * Math.pow(10, exponent);
+    }
+
+    // ==================== 绘制函数曲线 ====================
+    function drawAllFunctions() {
+      const yRange = viewYMax - viewYMin;
+      const xRange = viewXMax - viewXMin;
+      const steps = 2000;
+      const dx = xRange / steps;
+
+      functions.forEach(f => {
+        if (!f.enabled || !f.func) return;
+
+        const isHovered = (hoveredFunction === f);
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = isHovered ? 4 : 2.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.shadowColor = isHovered ? f.color : 'transparent';
+        ctx.shadowBlur = isHovered ? 18 : 0;
+
+        let firstPoint = true;
+        let prevY = null;
+        let prevPy = null;
+
+        for (let i = 0; i <= steps; i++) {
+          const x = viewXMin + i * dx;
+          let y;
+          try { y = f.func(x); } catch { y = NaN; }
+
+          if (typeof y !== 'number' || !isFinite(y)) {
+            firstPoint = true;
+            prevY = null;
+            prevPy = null;
+            continue;
+          }
+
+          const { px, py } = toCanvasCoords(x, y);
+
+          let shouldBreak = false;
+          if (prevY !== null && prevPy !== null) {
+            if (Math.abs(y - prevY) > yRange * 2) shouldBreak = true;
+            if (prevY * y < 0 && Math.abs(prevY) > yRange * 0.5 && Math.abs(y) > yRange * 0.5) shouldBreak = true;
+            if (Math.abs(py - prevPy) > CANVAS_HEIGHT * 1.5) shouldBreak = true;
+          }
+
+          if (shouldBreak) firstPoint = true;
+
+          if (firstPoint) {
+            ctx.moveTo(px, py);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(px, py);
+          }
+
+          prevY = y;
+          prevPy = py;
+        }
+
+        ctx.stroke();
+
+        if (!isHovered) {
+          ctx.shadowColor = f.color + '30';
+          ctx.shadowBlur = 8;
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+    }
+
+    // ==================== 函数分析 ====================
+    function checkParity(fn) {
+      if (!fn) return '—';
+      const testPoints = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
+      let evenOk = true, oddOk = true;
+      for (let x of testPoints) {
+        const y1 = safeEval(fn, x);
+        const y2 = safeEval(fn, -x);
+        if (isNaN(y1) || isNaN(y2)) continue;
+        const eps = 1e-6;
+        if (Math.abs(y2 + y1) > eps) oddOk = false;
+        if (Math.abs(y2 - y1) > eps) evenOk = false;
+        if (!evenOk && !oddOk) break;
+      }
+      if (evenOk && oddOk) return '既奇又偶 (零函数)';
+      if (evenOk) return '偶函数';
+      if (oddOk) return '奇函数';
+      return '非奇非偶';
+    }
+
+    /**
+     * 判断指定区间的单调性。
+     * 关键修复：若区间内存在无定义点（如 1/x 的 x=0），或函数值发生无穷跳变，
+     * 则单调性无法判定为递增/递减，应返回“不单调”或“区间含无定义点”。
+     *
+     * 策略：在区间内均匀采样，若发现某点无定义，或相邻两点函数值符号突变
+     * 且绝对值都很大（渐近线特征），则认为区间被无定义点分割，不单调。
+     */
+    function checkMonotonicity(fn, start, end) {
+      if (!fn) return '—';
+      if (start >= end) return '区间无效';
+
+      const samples = 50;
+      const step = (end - start) / samples;
+      let increasing = true;
+      let decreasing = true;
+      let prevY = null;
+      let hasUndefined = false;
+      let hasAsymptoteJump = false;
+
+      // 先收集所有采样点的 (x, y)
+      const points = [];
+      for (let i = 0; i <= samples; i++) {
+        const x = start + i * step;
+        const y = safeEval(fn, x);
+        points.push({ x, y });
+        if (isNaN(y)) hasUndefined = true;
+      }
+
+      // 逐对比较
+      for (let i = 0; i < points.length; i++) {
+        const { y } = points[i];
+        if (isNaN(y)) {
+          prevY = null;
+          continue;
+        }
+        if (prevY !== null) {
+          // 若相邻两点符号相反且绝对值都很大，视为跨越渐近线
+          if (prevY * y < 0 && Math.abs(prevY) > 1 && Math.abs(y) > 1) {
+            // 进一步确认：检查中间是否存在无定义点或极大跳变
+            const midX = (points[i-1].x + points[i].x) / 2;
+            const midY = safeEval(fn, midX);
+            if (isNaN(midY) || Math.abs(midY) > 1e6) {
+              hasAsymptoteJump = true;
+            }
+          }
+          if (y < prevY - 1e-9) increasing = false;
+          if (y > prevY + 1e-9) decreasing = false;
+        }
+        prevY = y;
+      }
+
+      // 区间内有无定义点，或跨越渐近线 → 不单调
+      if (hasUndefined || hasAsymptoteJump) {
+        return '不单调 (区间含无定义点/渐近线)';
+      }
+
+      // 全部有定义且单调
+      if (increasing && !decreasing) return '↗ 单调递增';
+      if (decreasing && !increasing) return '↘ 单调递减';
+      if (increasing && decreasing) return '常函数 (水平)';
+      return '不单调';
+    }
+
+    function updateAnalysisTable() {
+      analysisBody.innerHTML = '';
+      const activeFuncs = functions.filter(f => f.enabled && f.func);
+      if (activeFuncs.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="3" style="text-align:center; color:var(--empty-text); padding:20px;">暂无启用的函数</td>`;
+        analysisBody.appendChild(row);
+        return;
+      }
+      activeFuncs.forEach(f => {
+        const row = document.createElement('tr');
+        const funcCell = document.createElement('td');
+        const colorDot = document.createElement('span');
+        colorDot.className = 'color-dot';
+        colorDot.style.backgroundColor = f.color;
+        funcCell.appendChild(colorDot);
+        funcCell.appendChild(document.createTextNode(f.label || f.expr));
+        const parityCell = document.createElement('td');
+        parityCell.textContent = checkParity(f.func);
+        const monoCell = document.createElement('td');
+        monoCell.textContent = checkMonotonicity(f.func, monoInterval.start, monoInterval.end);
+        row.appendChild(funcCell);
+        row.appendChild(parityCell);
+        row.appendChild(monoCell);
+        analysisBody.appendChild(row);
+      });
+    }
+
+    // ==================== 渲染分层 ====================
+    function renderCanvas() {
+      drawGridAndAxes();
+      drawAllFunctions();
+    }
+
+    function renderAll() {
+      renderCanvas();
+      updateAnalysisTable();
+    }
+
+    function recompileAllFunctions() {
+      let hasError = false;
+      errorMessage.textContent = '';
+      functions.forEach(f => {
+        if (!f.expr.trim()) { f.func = null; return; }
+        try {
+          f.func = compileExpression(f.expr);
+        } catch (e) {
+          f.func = null;
+          hasError = true;
+          if (errorMessage.textContent === '') {
+            errorMessage.textContent = `函数 "${f.expr}" 错误: ${e.message}`;
+          }
+        }
+      });
+      if (!hasError) errorMessage.textContent = '';
+    }
+
+    // ==================== 函数列表 UI ====================
+    function syncFunctionsFromUI() {
+      const items = functionListDiv.querySelectorAll('.function-item');
+      if (items.length !== functions.length) {
+        const newFunctions = [];
+        items.forEach((item, index) => {
+          newFunctions.push({
+            id: index,
+            expr: item.querySelector('.func-input-small').value.trim(),
+            label: item.querySelector('.func-label-input').value.trim(),
+            color: item.querySelector('.color-picker').value,
+            enabled: !item.classList.contains('disabled'),
+            func: null
+          });
+        });
+        functions = newFunctions;
+        hoveredFunction = null;
+        return;
+      }
+      items.forEach((item, index) => {
+        functions[index].expr = item.querySelector('.func-input-small').value.trim();
+        functions[index].label = item.querySelector('.func-label-input').value.trim();
+        functions[index].color = item.querySelector('.color-picker').value;
+        functions[index].enabled = !item.classList.contains('disabled');
+        functions[index].func = null;
+      });
+    }
+
+    function renderFunctionList() {
+      functionListDiv.innerHTML = '';
+      if (functions.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'empty-message';
+        emptyMsg.textContent = '暂无函数，点击右上角 ＋ 添加';
+        functionListDiv.appendChild(emptyMsg);
+        return;
+      }
+      functions.forEach((f, index) => {
+        const item = document.createElement('div');
+        item.className = 'function-item' + (f.enabled ? '' : ' disabled');
+        item.dataset.index = index;
+
+        const mainRow = document.createElement('div');
+        mainRow.className = 'function-main-row';
+
+        const colorPicker = document.createElement('input');
+        colorPicker.type = 'color';
+        colorPicker.className = 'color-picker';
+        colorPicker.value = f.color;
+        colorPicker.addEventListener('input', (e) => {
+          const idx = parseInt(item.dataset.index);
+          functions[idx].color = e.target.value;
+          if (autoDrawEnabled) renderCanvas();
+        });
+
+        const exprInput = document.createElement('input');
+        exprInput.type = 'text';
+        exprInput.className = 'func-input-small';
+        exprInput.value = f.expr;
+        exprInput.placeholder = '例如: a*sin(b*x) + c';
+        exprInput.addEventListener('input', (e) => {
+          const idx = parseInt(item.dataset.index);
+          functions[idx].expr = e.target.value;
+          if (autoDrawEnabled) autoRedraw();
+        });
+        exprInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') plotBtn.click();
+        });
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-icon';
+        toggleBtn.innerHTML = f.enabled ? '👁️' : '👁️‍🗨️';
+        toggleBtn.title = f.enabled ? '禁用' : '启用';
+        toggleBtn.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.index);
+          functions[idx].enabled = !functions[idx].enabled;
+          item.classList.toggle('disabled', !functions[idx].enabled);
+          toggleBtn.innerHTML = functions[idx].enabled ? '👁️' : '👁️‍🗨️';
+          renderCanvas();
+          updateAnalysisTable();
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-icon';
+        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.title = '删除函数';
+        deleteBtn.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.index);
+          functions.splice(idx, 1);
+          hoveredFunction = null;
+          renderFunctionList();
+          if (autoDrawEnabled) autoRedraw(); else renderAll();
+        });
+
+        mainRow.appendChild(colorPicker);
+        mainRow.appendChild(exprInput);
+        mainRow.appendChild(toggleBtn);
+        mainRow.appendChild(deleteBtn);
+        item.appendChild(mainRow);
+
+        const labelRow = document.createElement('div');
+        labelRow.style.display = 'flex';
+        labelRow.style.alignItems = 'center';
+        labelRow.style.gap = '6px';
+        labelRow.style.paddingLeft = '2px';
+
+        const labelIcon = document.createElement('span');
+        labelIcon.textContent = '🏷️';
+        labelIcon.style.fontSize = '0.8rem';
+        labelIcon.style.opacity = '0.7';
+
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'func-label-input';
+        labelInput.value = f.label || '';
+        labelInput.placeholder = '添加标签（如：正弦波）';
+        labelInput.addEventListener('input', (e) => {
+          const idx = parseInt(item.dataset.index);
+          functions[idx].label = e.target.value;
+          updateAnalysisTable();
+        });
+
+        labelRow.appendChild(labelIcon);
+        labelRow.appendChild(labelInput);
+        item.appendChild(labelRow);
+
+        functionListDiv.appendChild(item);
+      });
+    }
+
+    function addFunction(expr = '', color = null) {
+      const defaultColors = ['#1e5e9e', '#d94b4b', '#2b9e5e', '#b86b1e', '#8e44ad', '#e67e22', '#1abc9c'];
+      const colorToUse = color || defaultColors[functions.length % defaultColors.length];
+      functions.push({
+        id: functions.length,
+        expr: expr,
+        label: '',
+        color: colorToUse,
+        enabled: true,
+        func: null
+      });
+      renderFunctionList();
+      if (autoDrawEnabled) autoRedraw(); else renderAll();
+    }
+
+    // ==================== 自动绘制开关 ====================
+    autoDrawToggle.addEventListener('click', () => {
+      autoDrawEnabled = !autoDrawEnabled;
+      autoDrawToggle.classList.toggle('active', autoDrawEnabled);
+      autoDrawToggle.title = autoDrawEnabled ? '自动绘制已开启' : '开启后，修改将自动重绘';
+      if (autoDrawEnabled) {
+        recompileAllFunctions();
+        renderAll();
+      }
+    });
+
+    // ==================== 按钮事件 ====================
+    addFunctionBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addFunction('', null);
+    });
+
+    plotBtn.addEventListener('click', () => {
+      funcWarning.textContent = '';
+      syncFunctionsFromUI();
+      recompileAllFunctions();
+      renderAll();
+    });
+
+    resetViewBtn.addEventListener('click', () => {
+      viewXMin = -8; viewXMax = 8; viewYMin = -8; viewYMax = 8;
+      renderCanvas();
+    });
+
+    addParamBtn.addEventListener('click', () => {
+      const name = newParamNameInput.value.trim();
+      if (addParameter(name)) {
+        newParamNameInput.value = '';
+        paramWarning.textContent = '';
+      }
+    });
+
+    newParamNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addParamBtn.click();
+    });
+
+    applyIntervalBtn.addEventListener('click', () => {
+      const start = parseFloat(monoIntervalStart.value);
+      const end = parseFloat(monoIntervalEnd.value);
+      if (isNaN(start) || isNaN(end) || start >= end) {
+        errorMessage.textContent = '单调性区间无效';
+        return;
+      }
+      monoInterval.start = start;
+      monoInterval.end = end;
+      errorMessage.textContent = '';
+      updateAnalysisTable();
+    });
+
+    // ==================== 画布悬停检测 ====================
+    let hoverRafId = null;
+    let pendingMouseEvent = null;
+
+    canvas.addEventListener('mousemove', (e) => {
+      pendingMouseEvent = e;
+      if (hoverRafId) return;
+      hoverRafId = requestAnimationFrame(() => {
+        hoverRafId = null;
+        if (!pendingMouseEvent) return;
+        const evt = pendingMouseEvent;
+        pendingMouseEvent = null;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = CANVAS_WIDTH / rect.width;
+        const scaleY = CANVAS_HEIGHT / rect.height;
+        const canvasX = (evt.clientX - rect.left) * scaleX;
+        const canvasY = (evt.clientY - rect.top) * scaleY;
+        const { x: logicX } = toLogicCoords(canvasX, canvasY);
+
+        let closest = null;
+        let minDist = 18;
+
+        functions.forEach(f => {
+          if (!f.enabled || !f.func) return;
+          const y = safeEval(f.func, logicX);
+          if (isNaN(y)) return;
+          const { py } = toCanvasCoords(logicX, y);
+          const dist = Math.abs(py - canvasY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = f;
+          }
+        });
+
+        if (closest) {
+          hoveredFunction = closest;
+          tooltipLabel.innerHTML = `<span class="tooltip-color-bar" style="background:${closest.color}"></span>${closest.label || '未命名函数'}`;
+          tooltipExpr.textContent = `f(x) = ${closest.expr}`;
+          canvasTooltip.classList.add('visible');
+          const wrapperRect = canvasWrapper.getBoundingClientRect();
+          const tooltipX = evt.clientX - wrapperRect.left;
+          const tooltipY = evt.clientY - wrapperRect.top;
+          canvasTooltip.style.left = tooltipX + 'px';
+          canvasTooltip.style.top = tooltipY + 'px';
+        } else {
+          hoveredFunction = null;
+          canvasTooltip.classList.remove('visible');
+        }
+        renderCanvas();
+      });
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      hoveredFunction = null;
+      canvasTooltip.classList.remove('visible');
+      renderCanvas();
+    });
+
+    // ==================== 画布交互：拖拽平移 ====================
+    let isDragging = false;
+    let lastMouseX = 0, lastMouseY = 0;
+
+    canvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+      lastMouseX = (e.clientX - rect.left) * scaleX;
+      lastMouseY = (e.clientY - rect.top) * scaleY;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+      const dx = mouseX - lastMouseX;
+      const dy = mouseY - lastMouseY;
+      const xRange = viewXMax - viewXMin;
+      const yRange = viewYMax - viewYMin;
+      const dxLogic = (dx / CANVAS_WIDTH) * xRange;
+      const dyLogic = (dy / CANVAS_HEIGHT) * yRange;
+      viewXMin -= dxLogic; viewXMax -= dxLogic;
+      viewYMin += dyLogic; viewYMax += dyLogic;
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+      renderCanvas();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      canvas.style.cursor = 'crosshair';
+    });
+
+    // ==================== 画布交互：滚轮缩放 ====================
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
+      const mouseY = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+      const { x: logicX, y: logicY } = toLogicCoords(mouseX, mouseY);
+      const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+      const newXRange = (viewXMax - viewXMin) * zoomFactor;
+      const newYRange = (viewYMax - viewYMin) * zoomFactor;
+      if (newXRange < 0.1 || newXRange > 1e6) return;
+      viewXMin = logicX - (logicX - viewXMin) * zoomFactor;
+      viewXMax = logicX + (viewXMax - logicX) * zoomFactor;
+      viewYMin = logicY - (logicY - viewYMin) * zoomFactor;
+      viewYMax = logicY + (viewYMax - logicY) * zoomFactor;
+      renderCanvas();
+    }, { passive: false });
+
+    // ==================== 启动 ====================
+    initDefaultParams();
+    functions = [];
+    renderFunctionList();
+    renderAll();
+    monoIntervalStart.value = -1;
+    monoIntervalEnd.value = 1;
+    monoInterval.start = -1;
+    monoInterval.end = 1;
+    applyTheme('light');
+    initCollapsiblePanels();
+    initHintTooltips();
+  })();
+</script>
+</body>
+</html>
